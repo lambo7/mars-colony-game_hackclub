@@ -710,6 +710,262 @@
     font-size: 0.75rem;
     letter-spacing: 2px;
   }
+
+  /* ===== DIFFICULTY SCREEN ===== */
+  .difficulty-screen {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); flex-direction: column; gap: 0;
+  }
+  .difficulty-screen.hidden { display: none; }
+  .diff-logo {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.8rem;
+    color: var(--amber); text-shadow: 0 0 40px rgba(255,179,0,0.6);
+    letter-spacing: 6px; margin-bottom: 6px; text-align: center;
+  }
+  .diff-logo span { color: var(--red); }
+  .diff-subtitle {
+    font-family: 'Share Tech Mono', monospace; font-size: 0.75rem;
+    color: var(--text-dim); letter-spacing: 4px; margin-bottom: 48px; text-align: center;
+  }
+  .diff-label {
+    font-family: 'Orbitron', sans-serif; font-size: 0.6rem;
+    letter-spacing: 4px; color: var(--amber-dim); margin-bottom: 20px; text-align: center;
+  }
+  .diff-cards { display: flex; gap: 16px; margin-bottom: 40px; }
+  .diff-card {
+    border: 1px solid var(--border); padding: 24px 28px; width: 180px;
+    background: rgba(255,255,255,0.02); cursor: pointer;
+    transition: all 0.2s; text-align: center; position: relative;
+  }
+  .diff-card.easy:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(57,255,20,0.15); transform: translateY(-4px); }
+  .diff-card.normal:hover { border-color: var(--amber); box-shadow: 0 0 20px rgba(255,179,0,0.15); transform: translateY(-4px); }
+  .diff-card.hard:hover { border-color: var(--red); box-shadow: 0 0 20px rgba(255,59,48,0.15); transform: translateY(-4px); }
+  .diff-card-icon { font-size: 2rem; margin-bottom: 10px; }
+  .diff-card-name {
+    font-family: 'Orbitron', sans-serif; font-size: 0.75rem;
+    font-weight: 700; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .diff-card.easy .diff-card-name { color: var(--green); }
+  .diff-card.normal .diff-card-name { color: var(--amber); }
+  .diff-card.hard .diff-card-name { color: var(--red); }
+  .diff-card-desc { font-size: 0.62rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px; }
+  .diff-card-stats { display: flex; flex-direction: column; gap: 3px; font-size: 0.6rem; text-align: left; }
+  .diff-stat-row { display: flex; justify-content: space-between; color: var(--text-dim); }
+  .diff-stat-val.good { color: var(--green); }
+  .diff-stat-val.warn { color: var(--amber); }
+  .diff-stat-val.bad { color: var(--red); }
+  .diff-badge {
+    position: absolute; top: 8px; right: 8px;
+    font-family: 'Orbitron', sans-serif; font-size: 0.45rem;
+    letter-spacing: 1px; padding: 2px 5px;
+    border: 1px solid var(--amber); color: var(--amber);
+  }
+  .diff-indicator {
+    font-family: 'Orbitron', sans-serif; font-size: 0.6rem;
+    letter-spacing: 2px; padding: 3px 8px; border: 1px solid;
+  }
+  .diff-indicator.easy { border-color: var(--green); color: var(--green); }
+  .diff-indicator.normal { border-color: var(--amber); color: var(--amber); }
+  .diff-indicator.hard { border-color: var(--red); color: var(--red); animation: blink 2s step-end infinite; }
+
+  /* ===== UPGRADES MODAL ===== */
+  .upgrade-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .upgrade-modal.active { opacity: 1; pointer-events: all; }
+
+  .upgrade-box {
+    border: 1px solid var(--amber);
+    background: var(--panel);
+    width: 680px;
+    max-width: 95vw;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+    position: relative;
+  }
+
+  .upgrade-box::-webkit-scrollbar { width: 4px; }
+  .upgrade-box::-webkit-scrollbar-track { background: var(--bg); }
+  .upgrade-box::-webkit-scrollbar-thumb { background: var(--amber-dim); }
+
+  .upgrade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .upgrade-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--amber);
+    letter-spacing: 3px;
+    text-shadow: 0 0 15px rgba(255,179,0,0.4);
+  }
+
+  .upgrade-score {
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    color: var(--green);
+  }
+
+  .upgrade-score span { color: var(--text-dim); font-size: 0.75rem; font-family: 'Share Tech Mono', monospace; }
+
+  .close-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .close-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .upgrade-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .upgrade-card {
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    background: rgba(255,179,0,0.02);
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upgrade-card:hover { border-color: rgba(255,179,0,0.3); background: rgba(255,179,0,0.05); }
+  .upgrade-card.maxed { border-color: rgba(57,255,20,0.3); background: rgba(57,255,20,0.03); }
+  .upgrade-card.cant-afford { opacity: 0.5; }
+
+  .upgrade-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .upgrade-icon { font-size: 1.2rem; }
+
+  .upgrade-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 1px;
+    flex: 1;
+  }
+
+  .upgrade-level {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    color: var(--text-dim);
+  }
+  .upgrade-level.maxed { color: var(--green); }
+
+  .upgrade-desc {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .upgrade-effect {
+    font-size: 0.65rem;
+    color: var(--green);
+    margin-bottom: 10px;
+  }
+
+  .upgrade-level-pips {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+
+  .pip {
+    width: 16px;
+    height: 4px;
+    border-radius: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .pip.filled { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 4px rgba(255,179,0,0.4); }
+  .pip.filled.maxed { background: var(--green); border-color: var(--green); box-shadow: 0 0 4px rgba(57,255,20,0.4); }
+
+  .upgrade-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 4px 12px;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber-dim);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 1px;
+    width: 100%;
+  }
+
+  .upgrade-btn:hover:not(:disabled) {
+    background: var(--amber);
+    color: var(--bg);
+    border-color: var(--amber);
+    box-shadow: 0 0 10px rgba(255,179,0,0.3);
+  }
+
+  .upgrade-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .upgrade-btn.maxed-btn {
+    border-color: rgba(57,255,20,0.3);
+    color: var(--green);
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  /* Upgrades button in header */
+  .upgrade-open-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 5px 14px;
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upgrade-open-btn:hover {
+    background: var(--blue);
+    color: var(--bg);
+    box-shadow: 0 0 12px rgba(0,207,255,0.3);
+  }
 </style>
 </head>
 <body>
@@ -723,7 +979,11 @@
     <div class="header-stat">CREW ALIVE <strong id="crewAlive">5</strong></div>
     <div class="header-stat">MISSION SCORE <strong id="missionScore">0</strong></div>
   </div>
-  <div class="sol-counter">SOL <span id="solNum">001</span> / 100</div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="diff-indicator normal" id="diffIndicator">NORMAL</div>
+    <button class="upgrade-open-btn" onclick="openUpgrades()">⬆ UPGRADES</button>
+    <div class="sol-counter">SOL <span id="solNum">001</span> / 100</div>
+  </div>
 </div>
 
 <!-- Alert bar -->
@@ -832,6 +1092,62 @@
 
 </div>
 
+<!-- Difficulty Selection Screen -->
+<div class="difficulty-screen" id="difficultyScreen">
+  <div class="diff-logo">ARES<span>-1</span></div>
+  <div class="diff-subtitle">COLONY COMMAND &nbsp;·&nbsp; MARS SETTLEMENT SIMULATION</div>
+  <div class="diff-label">▸ SELECT DIFFICULTY ◂</div>
+  <div class="diff-cards">
+    <div class="diff-card easy" onclick="startGame('easy')">
+      <div class="diff-card-icon">🌱</div>
+      <div class="diff-card-name">EASY</div>
+      <div class="diff-card-desc">Reduced resource drain. More forgiving events. Good for first-time commanders.</div>
+      <div class="diff-card-stats">
+        <div class="diff-stat-row"><span>Resource drain</span><span class="diff-stat-val good">−50%</span></div>
+        <div class="diff-stat-row"><span>Event damage</span><span class="diff-stat-val good">−30%</span></div>
+        <div class="diff-stat-row"><span>Starting resources</span><span class="diff-stat-val good">+20%</span></div>
+      </div>
+    </div>
+    <div class="diff-card normal" onclick="startGame('normal')">
+      <div class="diff-badge">RECOMMENDED</div>
+      <div class="diff-card-icon">🚀</div>
+      <div class="diff-card-name">NORMAL</div>
+      <div class="diff-card-desc">The intended experience. Balanced challenge for most commanders.</div>
+      <div class="diff-card-stats">
+        <div class="diff-stat-row"><span>Resource drain</span><span class="diff-stat-val warn">standard</span></div>
+        <div class="diff-stat-row"><span>Event damage</span><span class="diff-stat-val warn">standard</span></div>
+        <div class="diff-stat-row"><span>Starting resources</span><span class="diff-stat-val warn">standard</span></div>
+      </div>
+    </div>
+    <div class="diff-card hard" onclick="startGame('hard')">
+      <div class="diff-card-icon">☠️</div>
+      <div class="diff-card-name">HARD</div>
+      <div class="diff-card-desc">Brutal drain, severe events, low starting resources. For veterans only.</div>
+      <div class="diff-card-stats">
+        <div class="diff-stat-row"><span>Resource drain</span><span class="diff-stat-val bad">+60%</span></div>
+        <div class="diff-stat-row"><span>Event damage</span><span class="diff-stat-val bad">+50%</span></div>
+        <div class="diff-stat-row"><span>Starting resources</span><span class="diff-stat-val bad">−20%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upgrades Modal -->
+<div class="upgrade-modal" id="upgradeModal">
+  <div class="upgrade-box">
+    <div class="upgrade-header">
+      <div class="upgrade-title">⬆ COLONY UPGRADES</div>
+      <div style="display:flex;align-items:center;gap:16px">
+    <div class="diff-indicator normal" id="diffIndicator">NORMAL</div>
+        <div class="upgrade-score"><span>SCORE: </span><span id="upgradeScore">0</span> pts</div>
+        <button class="close-btn" onclick="closeUpgrades()">✕</button>
+      </div>
+    </div>
+    <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:16px">Spend your mission score to permanently upgrade colony buildings. Upgrades apply every sol.</div>
+    <div class="upgrade-grid" id="upgradeGrid"></div>
+  </div>
+</div>
+
 <!-- Game Over overlay -->
 <div class="overlay" id="overlay">
   <div class="overlay-box">
@@ -871,7 +1187,8 @@ function initState() {
     dustStorm: false,
     gameOver: false,
     won: false,
-    log: []
+    log: [],
+    upgrades: {}
   };
 }
 
@@ -991,13 +1308,244 @@ const EVENTS = [
   },
 ];
 
-// ========== HELPERS ==========
+
+// ========== DIFFICULTY ==========
+const DIFFICULTY = {
+  easy:   { drainMult: 0.5,  damageMult: 0.7,  resourceBonus: 20,  scoreBonus: 0,    label: 'EASY',   cls: 'easy'   },
+  normal: { drainMult: 1.0,  damageMult: 1.0,  resourceBonus: 0,   scoreBonus: 0,    label: 'NORMAL', cls: 'normal' },
+  hard:   { drainMult: 1.6,  damageMult: 1.5,  resourceBonus: -20, scoreBonus: 2,    label: 'HARD',   cls: 'hard'   },
+};
+let difficulty = 'normal';
+
+function startGame(diff) {
+  difficulty = diff;
+  const cfg = DIFFICULTY[diff];
+
+  // Update header indicator
+  const ind = document.getElementById('diffIndicator');
+  ind.textContent = cfg.label;
+  ind.className = 'diff-indicator ' + cfg.cls;
+
+  // Hide difficulty screen
+  document.getElementById('difficultyScreen').classList.add('hidden');
+
+  // Init state with difficulty bonuses
+  initState();
+
+  // Apply resource bonus/penalty
+  if (cfg.resourceBonus !== 0) {
+    for (const k of Object.keys(state.resources)) {
+      state.resources[k] = Math.max(10, Math.min(100, state.resources[k] + cfg.resourceBonus));
+    }
+  }
+
+  addLog("Mission ARES-1 initiated. Difficulty: " + cfg.label + ".", "good");
+  state.currentEvents = pickEvents();
+  renderEvents();
+  renderUI();
+}
+
+// ========== UPGRADES ==========
+const UPGRADES = [
+  {
+    id: 'solar_array',
+    icon: '☀️',
+    name: 'SOLAR ARRAY',
+    desc: 'Expand photovoltaic panels to generate more power each sol.',
+    maxLevel: 3,
+    costs: [100, 250, 500],
+    effects: [
+      { label: '+3 Power/sol', apply: (s) => s.resources.power = clamp(s.resources.power + 3) },
+      { label: '+5 Power/sol', apply: (s) => s.resources.power = clamp(s.resources.power + 5) },
+      { label: '+8 Power/sol', apply: (s) => s.resources.power = clamp(s.resources.power + 8) },
+    ]
+  },
+  {
+    id: 'greenhouse',
+    icon: '🌱',
+    name: 'GREENHOUSE',
+    desc: 'Expand hydroponic bays to increase food yield every sol.',
+    maxLevel: 3,
+    costs: [120, 280, 550],
+    effects: [
+      { label: '+3 Food/sol', apply: (s) => s.resources.food = clamp(s.resources.food + 3) },
+      { label: '+5 Food/sol', apply: (s) => s.resources.food = clamp(s.resources.food + 5) },
+      { label: '+8 Food/sol', apply: (s) => s.resources.food = clamp(s.resources.food + 8) },
+    ]
+  },
+  {
+    id: 'ice_drill',
+    icon: '💧',
+    name: 'ICE DRILL',
+    desc: 'Deeper drilling rigs extract more subsurface water per sol.',
+    maxLevel: 3,
+    costs: [120, 280, 550],
+    effects: [
+      { label: '+3 Water/sol', apply: (s) => s.resources.water = clamp(s.resources.water + 3) },
+      { label: '+5 Water/sol', apply: (s) => s.resources.water = clamp(s.resources.water + 5) },
+      { label: '+8 Water/sol', apply: (s) => s.resources.water = clamp(s.resources.water + 8) },
+    ]
+  },
+  {
+    id: 'habitat',
+    icon: '🏠',
+    name: 'HABITAT MODULE',
+    desc: 'Expand crew quarters and recreation to improve morale each sol.',
+    maxLevel: 3,
+    costs: [150, 300, 600],
+    effects: [
+      { label: '+3 Morale/sol', apply: (s) => s.resources.morale = clamp(s.resources.morale + 3) },
+      { label: '+5 Morale/sol', apply: (s) => s.resources.morale = clamp(s.resources.morale + 5) },
+      { label: '+8 Morale/sol', apply: (s) => s.resources.morale = clamp(s.resources.morale + 8) },
+    ]
+  },
+  {
+    id: 'life_support',
+    icon: '🫁',
+    name: 'LIFE SUPPORT',
+    desc: 'Upgraded CO2 scrubbers and O2 generators replenish oxygen each sol.',
+    maxLevel: 3,
+    costs: [150, 320, 620],
+    effects: [
+      { label: '+3 Oxygen/sol', apply: (s) => s.resources.oxygen = clamp(s.resources.oxygen + 3) },
+      { label: '+5 Oxygen/sol', apply: (s) => s.resources.oxygen = clamp(s.resources.oxygen + 5) },
+      { label: '+8 Oxygen/sol', apply: (s) => s.resources.oxygen = clamp(s.resources.oxygen + 8) },
+    ]
+  },
+  {
+    id: 'medbay',
+    icon: '⚕️',
+    name: 'MEDBAY',
+    desc: 'Advanced medical equipment heals crew health passively each sol.',
+    maxLevel: 3,
+    costs: [200, 400, 700],
+    effects: [
+      { label: '+5 Crew Health/sol', apply: (s) => healCrew(5) },
+      { label: '+10 Crew Health/sol', apply: (s) => healCrew(10) },
+      { label: '+15 Crew Health/sol', apply: (s) => healCrew(15) },
+    ]
+  },
+  {
+    id: 'lab',
+    icon: '🔬',
+    name: 'RESEARCH LAB',
+    desc: 'Better equipment generates more mission score passively each sol.',
+    maxLevel: 3,
+    costs: [100, 220, 450],
+    effects: [
+      { label: '+20 Score/sol', apply: (s) => s.score += 20 },
+      { label: '+40 Score/sol', apply: (s) => s.score += 40 },
+      { label: '+60 Score/sol', apply: (s) => s.score += 60 },
+    ]
+  },
+  {
+    id: 'comms',
+    icon: '📡',
+    name: 'COMMS ARRAY',
+    desc: 'Better Earth link reduces resource drain from crisis events.',
+    maxLevel: 2,
+    costs: [200, 500],
+    effects: [
+      { label: 'Crisis drain -20%', apply: () => {} },
+      { label: 'Crisis drain -40%', apply: () => {} },
+    ]
+  },
+];
+
+function openUpgrades() {
+  document.getElementById('upgradeModal').classList.add('active');
+  document.getElementById('upgradeScore').textContent = state.score;
+  renderUpgradeGrid();
+}
+
+function closeUpgrades() {
+  document.getElementById('upgradeModal').classList.remove('active');
+}
+
+function renderUpgradeGrid() {
+  const grid = document.getElementById('upgradeGrid');
+  grid.innerHTML = '';
+  document.getElementById('upgradeScore').textContent = state.score;
+
+  UPGRADES.forEach(upg => {
+    const level = state.upgrades[upg.id] || 0;
+    const isMaxed = level >= upg.maxLevel;
+    const cost = isMaxed ? 0 : upg.costs[level];
+    const canAfford = state.score >= cost;
+    const nextEffect = isMaxed ? null : upg.effects[level];
+
+    const card = document.createElement('div');
+    card.className = 'upgrade-card' + (isMaxed ? ' maxed' : (!canAfford ? ' cant-afford' : ''));
+
+    const pips = Array.from({length: upg.maxLevel}, (_, i) =>
+      `<div class="pip ${i < level ? (isMaxed ? 'filled maxed' : 'filled') : ''}"></div>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="upgrade-card-header">
+        <div class="upgrade-icon">${upg.icon}</div>
+        <div class="upgrade-name">${upg.name}</div>
+        <div class="upgrade-level ${isMaxed ? 'maxed' : ''}">LVL ${level}/${upg.maxLevel}</div>
+      </div>
+      <div class="upgrade-desc">${upg.desc}</div>
+      ${nextEffect ? `<div class="upgrade-effect">▸ Next: ${nextEffect.label}</div>` : ''}
+      <div class="upgrade-level-pips">${pips}</div>
+      ${isMaxed
+        ? `<button class="upgrade-btn maxed-btn" disabled>✓ FULLY UPGRADED</button>`
+        : `<button class="upgrade-btn" ${!canAfford ? 'disabled' : ''} onclick="buyUpgrade('${upg.id}')">
+            UPGRADE — ${cost} pts
+           </button>`
+      }
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function buyUpgrade(id) {
+  const upg = UPGRADES.find(u => u.id === id);
+  if (!upg) return;
+  const level = state.upgrades[id] || 0;
+  if (level >= upg.maxLevel) return;
+  const cost = upg.costs[level];
+  if (state.score < cost) return;
+
+  state.score -= cost;
+  state.upgrades[id] = level + 1;
+
+  // Flash effect
+  addLog(`${upg.name} upgraded to level ${level + 1}!`, 'good');
+
+  renderUpgradeGrid();
+  renderUI();
+
+  // Show score updated in modal
+  document.getElementById('upgradeScore').textContent = state.score;
+}
+
+function applyUpgrades() {
+  UPGRADES.forEach(upg => {
+    const level = state.upgrades[upg.id] || 0;
+    if (level > 0) {
+      // Apply all levels cumulatively each sol
+      for (let i = 0; i < level; i++) {
+        upg.effects[i].apply(state);
+      }
+    }
+  });
+}
+
+
 function clamp(v) { return Math.max(0, Math.min(100, v)); }
 
 function applyDelta(delta) {
+  // Apply comms upgrade: reduce negative resource changes
+  const commsLevel = state.upgrades['comms'] || 0;
+  const reduction = commsLevel === 1 ? 0.8 : commsLevel === 2 ? 0.6 : 1.0;
+
   for (const [k, v] of Object.entries(delta)) {
     if (state.resources[k] !== undefined) {
-      state.resources[k] = clamp(state.resources[k] + v);
+      const adjusted = v < 0 ? v * reduction : v;
+      state.resources[k] = clamp(state.resources[k] + adjusted);
     }
   }
   renderResources();
@@ -1006,7 +1554,8 @@ function applyDelta(delta) {
 function damageCrew(amount) {
   state.crew.forEach(c => {
     if (c.status !== 'dead') {
-      c.health = Math.max(0, c.health - (amount + (Math.random()*10-5)));
+      const dmgMult = DIFFICULTY[difficulty].damageMult;
+      c.health = Math.max(0, c.health - ((amount + (Math.random()*10-5)) * dmgMult));
       if (c.health <= 0) {
         c.status = 'dead';
         addLog(`${c.name} has died.`, 'danger');
@@ -1056,9 +1605,14 @@ function advanceSol() {
 
   // Passive resource drain
   const alive = state.crew.filter(c=>c.status!=='dead').length;
-  const drain = { oxygen: -(2+alive*0.5), food: -(2+alive*0.4), water: -(1.5+alive*0.3), power: -3, morale: -2 };
+  const cfg = DIFFICULTY[difficulty];
+  const dm = cfg.drainMult;
+  const drain = { oxygen: -((2+alive*0.5)*dm), food: -((2+alive*0.4)*dm), water: -((1.5+alive*0.3)*dm), power: -(3*dm), morale: -(2*dm) };
   if (state.dustStorm) { drain.power -= 8; state.dustStorm = false; document.getElementById('dustStorm').classList.remove('active'); }
   applyDelta(drain);
+
+  // Apply building upgrades
+  applyUpgrades();
 
   // Sol passive crew health from resources
   if (state.resources.oxygen < 20) damageCrew(15);
@@ -1067,7 +1621,7 @@ function advanceSol() {
   if (state.resources.water < 20) damageCrew(10);
 
   // Score
-  state.score += alive * 10;
+  state.score += alive * 10 * (1 + DIFFICULTY[difficulty].scoreBonus);
 
   state.sol++;
   addLog(`Sol ${state.sol} begins. Resources consumed.`);
@@ -1247,18 +1801,16 @@ function restartGame() {
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('alertBar').style.display = 'none';
   document.getElementById('dustStorm').classList.remove('active');
+  // Show difficulty selection again for new mission
+  document.getElementById('difficultyScreen').classList.remove('hidden');
   initState();
-  addLog('Mission ARES-1 initiated. All systems nominal.', 'good');
-  state.currentEvents = pickEvents();
-  renderEvents();
   renderUI();
 }
 
 // ========== INIT ==========
+// Show difficulty screen first — game starts when player picks difficulty
+// renderUI once with default state so the background looks alive
 initState();
-addLog('Mission ARES-1 initiated. All systems nominal.', 'good');
-state.currentEvents = pickEvents();
-renderEvents();
 renderUI();
 </script>
 </body>
