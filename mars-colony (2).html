@@ -1339,7 +1339,7 @@ function startGame(diff) {
     }
   }
 
-  addLog(\`Mission ARES-1 initiated. Difficulty: \${cfg.label}.\`, 'good');
+  addLog("Mission ARES-1 initiated. Difficulty: " + cfg.label + ".", "good");
   state.currentEvents = pickEvents();
   renderEvents();
   renderUI();
