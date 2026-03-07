@@ -711,6 +711,133 @@
     letter-spacing: 2px;
   }
 
+  /* ===== INTRO SCREEN ===== */
+  .intro-screen {
+    position: fixed; inset: 0; z-index: 3000;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    transition: opacity 0.8s ease;
+  }
+  .intro-screen.fade-out { opacity: 0; pointer-events: none; }
+  .intro-screen.hidden { display: none; }
+
+  .intro-agency {
+    font-family: "Orbitron", sans-serif;
+    font-size: 0.55rem;
+    letter-spacing: 8px;
+    color: #333;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+  }
+
+  .intro-logo {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 900;
+    font-size: 3.5rem;
+    letter-spacing: 8px;
+    color: transparent;
+    background: linear-gradient(135deg, #ffb300 0%, #ff6600 50%, #ff3b30 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: none;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 1s cubic-bezier(0.2, 0, 0.1, 1);
+    margin-bottom: 8px;
+  }
+  .intro-logo.visible { opacity: 1; transform: scale(1); }
+
+  .intro-tagline {
+    font-family: "Share Tech Mono", monospace;
+    font-size: 0.7rem;
+    color: #444;
+    letter-spacing: 6px;
+    margin-bottom: 60px;
+    opacity: 0;
+    transition: opacity 0.8s ease 0.6s;
+  }
+  .intro-tagline.visible { opacity: 1; }
+
+  .intro-terminal {
+    width: 480px;
+    max-width: 90vw;
+    border: 1px solid #1a2a1a;
+    background: #020802;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    min-height: 160px;
+  }
+
+  .intro-terminal-header {
+    font-family: "Orbitron", sans-serif;
+    font-size: 0.5rem;
+    letter-spacing: 3px;
+    color: #2a4a2a;
+    border-bottom: 1px solid #1a2a1a;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+  }
+
+  .intro-line {
+    font-family: "Share Tech Mono", monospace;
+    font-size: 0.72rem;
+    color: #39ff14;
+    line-height: 1.8;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .intro-line.visible { opacity: 1; }
+  .intro-line.dim { color: #2a5a2a; }
+  .intro-line.warn { color: #ffb300; }
+  .intro-line.err { color: #ff3b30; }
+
+  .intro-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: #39ff14;
+    vertical-align: middle;
+    animation: blink 0.7s step-end infinite;
+    margin-left: 2px;
+  }
+
+  .intro-countdown {
+    font-family: "Orbitron", sans-serif;
+    font-size: 4rem;
+    font-weight: 900;
+    color: #ffb300;
+    text-shadow: 0 0 40px rgba(255,179,0,0.6);
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    transform: scale(1.2);
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .intro-countdown.visible { opacity: 1; transform: scale(1); }
+  .intro-countdown.pulse { animation: countdown-pulse 0.5s ease-out; }
+
+  @keyframes countdown-pulse {
+    0% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .intro-skip {
+    font-family: "Share Tech Mono", monospace;
+    font-size: 0.6rem;
+    color: #222;
+    letter-spacing: 2px;
+    cursor: pointer;
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    transition: color 0.2s;
+    background: none; border: none;
+  }
+  .intro-skip:hover { color: #555; }
+
   /* ===== DIFFICULTY SCREEN ===== */
   .difficulty-screen {
     position: fixed; inset: 0; z-index: 2000;
@@ -1092,6 +1219,22 @@
 
 </div>
 
+<!-- Intro / Mission Briefing Screen -->
+<div class="intro-screen" id="introScreen">
+  <div class="intro-agency">INTERNATIONAL SPACE EXPLORATION AUTHORITY · MISSION CONTROL</div>
+  <div class="intro-logo" id="introLogo">ARES-1</div>
+  <div class="intro-tagline" id="introTagline">COLONY COMMAND &nbsp;·&nbsp; MARS SETTLEMENT SIMULATION</div>
+
+  <div class="intro-terminal">
+    <div class="intro-terminal-header">▸ MISSION BRIEFING — EYES ONLY — SOL 0</div>
+    <div id="introLines"></div>
+    <span class="intro-cursor" id="introCursor" style="display:none"></span>
+  </div>
+
+  <div class="intro-countdown" id="introCountdown"></div>
+  <button class="intro-skip" onclick="skipIntro()">[ SKIP INTRO ]</button>
+</div>
+
 <!-- Difficulty Selection Screen -->
 <div class="difficulty-screen" id="difficultyScreen">
   <div class="diff-logo">ARES<span>-1</span></div>
@@ -1308,6 +1451,84 @@ const EVENTS = [
   },
 ];
 
+
+// ========== INTRO SCREEN ==========
+const INTRO_LINES = [
+  { text: '> INITIALIZING ARES-1 MISSION SYSTEMS...', cls: 'dim', delay: 0 },
+  { text: '> CONNECTING TO DEEP SPACE RELAY... OK', cls: 'dim', delay: 400 },
+  { text: '> CREW MANIFEST: 5 SPECIALISTS CONFIRMED', cls: '', delay: 800 },
+  { text: '> LIFE SUPPORT SYSTEMS: NOMINAL', cls: '', delay: 1200 },
+  { text: '> DESTINATION: MARS — ISIDIS PLANITIA', cls: '', delay: 1600 },
+  { text: '> MISSION DURATION: 100 SOLS', cls: 'warn', delay: 2000 },
+  { text: '> WARNING: NO EVACUATION PROTOCOL EXISTS', cls: 'err', delay: 2500 },
+  { text: '> COMMANDER, YOU ARE HUMANITY\'S LAST HOPE.', cls: 'warn', delay: 3200 },
+  { text: '> GOOD LUCK. GODSPEED. ARES-1 OUT.', cls: '', delay: 4000 },
+];
+
+let introSkipped = false;
+
+function runIntro() {
+  // Animate logo
+  setTimeout(() => {
+    document.getElementById('introLogo').classList.add('visible');
+    document.getElementById('introTagline').classList.add('visible');
+  }, 300);
+
+  // Show cursor
+  setTimeout(() => {
+    document.getElementById('introCursor').style.display = 'inline-block';
+  }, 800);
+
+  // Type lines
+  INTRO_LINES.forEach((line, i) => {
+    setTimeout(() => {
+      if (introSkipped) return;
+      const container = document.getElementById('introLines');
+      const el = document.createElement('div');
+      el.className = 'intro-line ' + (line.cls || '');
+      el.textContent = line.text;
+      container.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('visible'));
+    }, 1200 + line.delay);
+  });
+
+  // Hide cursor, show countdown
+  setTimeout(() => {
+    if (introSkipped) return;
+    document.getElementById('introCursor').style.display = 'none';
+    runCountdown(3);
+  }, 1200 + 4000 + 800);
+}
+
+function runCountdown(n) {
+  if (introSkipped) return;
+  const el = document.getElementById('introCountdown');
+  if (n <= 0) {
+    el.textContent = 'LAUNCH';
+    el.classList.add('visible', 'pulse');
+    setTimeout(() => { if (!introSkipped) finishIntro(); }, 700);
+    return;
+  }
+  el.textContent = n;
+  el.classList.add('visible');
+  void el.offsetWidth; // force reflow for pulse
+  el.classList.add('pulse');
+  setTimeout(() => {
+    el.classList.remove('pulse');
+    setTimeout(() => runCountdown(n - 1), 400);
+  }, 600);
+}
+
+function finishIntro() {
+  const screen = document.getElementById('introScreen');
+  screen.classList.add('fade-out');
+  setTimeout(() => screen.classList.add('hidden'), 800);
+}
+
+function skipIntro() {
+  introSkipped = true;
+  document.getElementById('introScreen').classList.add('hidden');
+}
 
 // ========== DIFFICULTY ==========
 const DIFFICULTY = {
@@ -1786,14 +2007,34 @@ function endGame(won, reason='') {
   const title = document.getElementById('overlayTitle');
   const sub = document.getElementById('overlaySub');
   overlay.classList.add('active');
+
+  const alive = state.crew.filter(c => c.status !== 'dead').length;
+  const dead = state.crew.filter(c => c.status === 'dead').length;
+  const diff = DIFFICULTY[difficulty].label;
+  const avgHealth = Math.round(state.crew.filter(c=>c.status!=='dead').reduce((s,c)=>s+c.health,0) / Math.max(alive,1));
+
+  const stats = [
+    '',
+    '─────────────────────────',
+    'MISSION STATISTICS',
+    '─────────────────────────',
+    'Difficulty:   ' + diff,
+    'Sols Survived: ' + (state.sol - 1) + ' / 100',
+    'Crew Alive:   ' + alive + ' / 5',
+    'Crew Lost:    ' + dead,
+    'Avg Health:   ' + avgHealth + '%',
+    'Final Score:  ' + state.score + ' pts',
+    '─────────────────────────',
+  ].join('\n');
+
   if (won) {
     title.textContent = 'COLONY ESTABLISHED';
     title.className = 'overlay-title';
-    sub.textContent = `After 100 sols, ARES-1 has achieved permanent settlement status. Your crew survived against all odds.\n\nFinal Score: ${state.score} points`;
+    sub.textContent = 'ARES-1 has achieved permanent settlement status.\nYour crew survived all 100 sols against all odds.' + stats;
   } else {
     title.textContent = 'MISSION FAILED';
     title.className = 'overlay-title danger';
-    sub.textContent = `${reason}\n\nSol Reached: ${state.sol} | Final Score: ${state.score}`;
+    sub.textContent = reason + stats;
   }
 }
 
@@ -1808,10 +2049,9 @@ function restartGame() {
 }
 
 // ========== INIT ==========
-// Show difficulty screen first — game starts when player picks difficulty
-// renderUI once with default state so the background looks alive
 initState();
 renderUI();
+runIntro();
 </script>
 </body>
 </html>
