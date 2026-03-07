@@ -711,6 +711,64 @@
     letter-spacing: 2px;
   }
 
+  /* ===== DIFFICULTY SCREEN ===== */
+  .difficulty-screen {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); flex-direction: column; gap: 0;
+  }
+  .difficulty-screen.hidden { display: none; }
+  .diff-logo {
+    font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.8rem;
+    color: var(--amber); text-shadow: 0 0 40px rgba(255,179,0,0.6);
+    letter-spacing: 6px; margin-bottom: 6px; text-align: center;
+  }
+  .diff-logo span { color: var(--red); }
+  .diff-subtitle {
+    font-family: 'Share Tech Mono', monospace; font-size: 0.75rem;
+    color: var(--text-dim); letter-spacing: 4px; margin-bottom: 48px; text-align: center;
+  }
+  .diff-label {
+    font-family: 'Orbitron', sans-serif; font-size: 0.6rem;
+    letter-spacing: 4px; color: var(--amber-dim); margin-bottom: 20px; text-align: center;
+  }
+  .diff-cards { display: flex; gap: 16px; margin-bottom: 40px; }
+  .diff-card {
+    border: 1px solid var(--border); padding: 24px 28px; width: 180px;
+    background: rgba(255,255,255,0.02); cursor: pointer;
+    transition: all 0.2s; text-align: center; position: relative;
+  }
+  .diff-card.easy:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(57,255,20,0.15); transform: translateY(-4px); }
+  .diff-card.normal:hover { border-color: var(--amber); box-shadow: 0 0 20px rgba(255,179,0,0.15); transform: translateY(-4px); }
+  .diff-card.hard:hover { border-color: var(--red); box-shadow: 0 0 20px rgba(255,59,48,0.15); transform: translateY(-4px); }
+  .diff-card-icon { font-size: 2rem; margin-bottom: 10px; }
+  .diff-card-name {
+    font-family: 'Orbitron', sans-serif; font-size: 0.75rem;
+    font-weight: 700; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .diff-card.easy .diff-card-name { color: var(--green); }
+  .diff-card.normal .diff-card-name { color: var(--amber); }
+  .diff-card.hard .diff-card-name { color: var(--red); }
+  .diff-card-desc { font-size: 0.62rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px; }
+  .diff-card-stats { display: flex; flex-direction: column; gap: 3px; font-size: 0.6rem; text-align: left; }
+  .diff-stat-row { display: flex; justify-content: space-between; color: var(--text-dim); }
+  .diff-stat-val.good { color: var(--green); }
+  .diff-stat-val.warn { color: var(--amber); }
+  .diff-stat-val.bad { color: var(--red); }
+  .diff-badge {
+    position: absolute; top: 8px; right: 8px;
+    font-family: 'Orbitron', sans-serif; font-size: 0.45rem;
+    letter-spacing: 1px; padding: 2px 5px;
+    border: 1px solid var(--amber); color: var(--amber);
+  }
+  .diff-indicator {
+    font-family: 'Orbitron', sans-serif; font-size: 0.6rem;
+    letter-spacing: 2px; padding: 3px 8px; border: 1px solid;
+  }
+  .diff-indicator.easy { border-color: var(--green); color: var(--green); }
+  .diff-indicator.normal { border-color: var(--amber); color: var(--amber); }
+  .diff-indicator.hard { border-color: var(--red); color: var(--red); animation: blink 2s step-end infinite; }
+
   /* ===== UPGRADES MODAL ===== */
   .upgrade-modal {
     position: fixed;
@@ -922,6 +980,7 @@
     <div class="header-stat">MISSION SCORE <strong id="missionScore">0</strong></div>
   </div>
   <div style="display:flex;align-items:center;gap:16px">
+    <div class="diff-indicator normal" id="diffIndicator">NORMAL</div>
     <button class="upgrade-open-btn" onclick="openUpgrades()">⬆ UPGRADES</button>
     <div class="sol-counter">SOL <span id="solNum">001</span> / 100</div>
   </div>
@@ -1033,12 +1092,53 @@
 
 </div>
 
+<!-- Difficulty Selection Screen -->
+<div class="difficulty-screen" id="difficultyScreen">
+  <div class="diff-logo">ARES<span>-1</span></div>
+  <div class="diff-subtitle">COLONY COMMAND &nbsp;·&nbsp; MARS SETTLEMENT SIMULATION</div>
+  <div class="diff-label">▸ SELECT DIFFICULTY ◂</div>
+  <div class="diff-cards">
+    <div class="diff-card easy" onclick="startGame('easy')">
+      <div class="diff-card-icon">🌱</div>
+      <div class="diff-card-name">EASY</div>
+      <div class="diff-card-desc">Reduced resource drain. More forgiving events. Good for first-time commanders.</div>
+      <div class="diff-card-stats">
+        <div class="diff-stat-row"><span>Resource drain</span><span class="diff-stat-val good">−50%</span></div>
+        <div class="diff-stat-row"><span>Event damage</span><span class="diff-stat-val good">−30%</span></div>
+        <div class="diff-stat-row"><span>Starting resources</span><span class="diff-stat-val good">+20%</span></div>
+      </div>
+    </div>
+    <div class="diff-card normal" onclick="startGame('normal')">
+      <div class="diff-badge">RECOMMENDED</div>
+      <div class="diff-card-icon">🚀</div>
+      <div class="diff-card-name">NORMAL</div>
+      <div class="diff-card-desc">The intended experience. Balanced challenge for most commanders.</div>
+      <div class="diff-card-stats">
+        <div class="diff-stat-row"><span>Resource drain</span><span class="diff-stat-val warn">standard</span></div>
+        <div class="diff-stat-row"><span>Event damage</span><span class="diff-stat-val warn">standard</span></div>
+        <div class="diff-stat-row"><span>Starting resources</span><span class="diff-stat-val warn">standard</span></div>
+      </div>
+    </div>
+    <div class="diff-card hard" onclick="startGame('hard')">
+      <div class="diff-card-icon">☠️</div>
+      <div class="diff-card-name">HARD</div>
+      <div class="diff-card-desc">Brutal drain, severe events, low starting resources. For veterans only.</div>
+      <div class="diff-card-stats">
+        <div class="diff-stat-row"><span>Resource drain</span><span class="diff-stat-val bad">+60%</span></div>
+        <div class="diff-stat-row"><span>Event damage</span><span class="diff-stat-val bad">+50%</span></div>
+        <div class="diff-stat-row"><span>Starting resources</span><span class="diff-stat-val bad">−20%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Upgrades Modal -->
 <div class="upgrade-modal" id="upgradeModal">
   <div class="upgrade-box">
     <div class="upgrade-header">
       <div class="upgrade-title">⬆ COLONY UPGRADES</div>
       <div style="display:flex;align-items:center;gap:16px">
+    <div class="diff-indicator normal" id="diffIndicator">NORMAL</div>
         <div class="upgrade-score"><span>SCORE: </span><span id="upgradeScore">0</span> pts</div>
         <button class="close-btn" onclick="closeUpgrades()">✕</button>
       </div>
@@ -1207,6 +1307,43 @@ const EVENTS = [
     ]
   },
 ];
+
+
+// ========== DIFFICULTY ==========
+const DIFFICULTY = {
+  easy:   { drainMult: 0.5,  damageMult: 0.7,  resourceBonus: 20,  scoreBonus: 0,    label: 'EASY',   cls: 'easy'   },
+  normal: { drainMult: 1.0,  damageMult: 1.0,  resourceBonus: 0,   scoreBonus: 0,    label: 'NORMAL', cls: 'normal' },
+  hard:   { drainMult: 1.6,  damageMult: 1.5,  resourceBonus: -20, scoreBonus: 2,    label: 'HARD',   cls: 'hard'   },
+};
+let difficulty = 'normal';
+
+function startGame(diff) {
+  difficulty = diff;
+  const cfg = DIFFICULTY[diff];
+
+  // Update header indicator
+  const ind = document.getElementById('diffIndicator');
+  ind.textContent = cfg.label;
+  ind.className = 'diff-indicator ' + cfg.cls;
+
+  // Hide difficulty screen
+  document.getElementById('difficultyScreen').classList.add('hidden');
+
+  // Init state with difficulty bonuses
+  initState();
+
+  // Apply resource bonus/penalty
+  if (cfg.resourceBonus !== 0) {
+    for (const k of Object.keys(state.resources)) {
+      state.resources[k] = Math.max(10, Math.min(100, state.resources[k] + cfg.resourceBonus));
+    }
+  }
+
+  addLog(\`Mission ARES-1 initiated. Difficulty: \${cfg.label}.\`, 'good');
+  state.currentEvents = pickEvents();
+  renderEvents();
+  renderUI();
+}
 
 // ========== UPGRADES ==========
 const UPGRADES = [
@@ -1417,7 +1554,8 @@ function applyDelta(delta) {
 function damageCrew(amount) {
   state.crew.forEach(c => {
     if (c.status !== 'dead') {
-      c.health = Math.max(0, c.health - (amount + (Math.random()*10-5)));
+      const dmgMult = DIFFICULTY[difficulty].damageMult;
+      c.health = Math.max(0, c.health - ((amount + (Math.random()*10-5)) * dmgMult));
       if (c.health <= 0) {
         c.status = 'dead';
         addLog(`${c.name} has died.`, 'danger');
@@ -1467,7 +1605,9 @@ function advanceSol() {
 
   // Passive resource drain
   const alive = state.crew.filter(c=>c.status!=='dead').length;
-  const drain = { oxygen: -(2+alive*0.5), food: -(2+alive*0.4), water: -(1.5+alive*0.3), power: -3, morale: -2 };
+  const cfg = DIFFICULTY[difficulty];
+  const dm = cfg.drainMult;
+  const drain = { oxygen: -((2+alive*0.5)*dm), food: -((2+alive*0.4)*dm), water: -((1.5+alive*0.3)*dm), power: -(3*dm), morale: -(2*dm) };
   if (state.dustStorm) { drain.power -= 8; state.dustStorm = false; document.getElementById('dustStorm').classList.remove('active'); }
   applyDelta(drain);
 
@@ -1481,7 +1621,7 @@ function advanceSol() {
   if (state.resources.water < 20) damageCrew(10);
 
   // Score
-  state.score += alive * 10;
+  state.score += alive * 10 * (1 + DIFFICULTY[difficulty].scoreBonus);
 
   state.sol++;
   addLog(`Sol ${state.sol} begins. Resources consumed.`);
@@ -1661,18 +1801,16 @@ function restartGame() {
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('alertBar').style.display = 'none';
   document.getElementById('dustStorm').classList.remove('active');
+  // Show difficulty selection again for new mission
+  document.getElementById('difficultyScreen').classList.remove('hidden');
   initState();
-  addLog('Mission ARES-1 initiated. All systems nominal.', 'good');
-  state.currentEvents = pickEvents();
-  renderEvents();
   renderUI();
 }
 
 // ========== INIT ==========
+// Show difficulty screen first — game starts when player picks difficulty
+// renderUI once with default state so the background looks alive
 initState();
-addLog('Mission ARES-1 initiated. All systems nominal.', 'good');
-state.currentEvents = pickEvents();
-renderEvents();
 renderUI();
 </script>
 </body>
