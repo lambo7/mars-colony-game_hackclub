@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARES-1 Colony Command</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber:   #ffb000;
+      --amber2:  #ff8c00;
+      --green:   #39ff14;
+      --green2:  #00e676;
+      --red:     #ff3d3d;
+      --bg:      #0a0800;
+      --panel:   #110e00;
+      --border:  #3a2e00;
+      --text:    #ffd166;
+      --dim:     #7a5f00;
+      --crit:    #ff2200;
+      --warn:    #ffaa00;
+      --ok:      #39ff14;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* CRT scanlines overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.18) 2px,
+        rgba(0,0,0,0.18) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* CRT vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center,
+        transparent 60%,
+        rgba(0,0,0,0.7) 100%);
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────── */
+    #app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      background: var(--panel);
+      animation: flicker 8s infinite;
+    }
+
+    @keyframes flicker {
+      0%,100%  { opacity: 1 }
+      92%      { opacity: 1 }
+      93%      { opacity: 0.97 }
+      94%      { opacity: 1 }
+      96%      { opacity: 0.94 }
+      97%      { opacity: 1 }
+    }
+
+    .title-block { display: flex; flex-direction: column; }
+    .title { font-size: 1.6rem; color: var(--amber); letter-spacing: .2em; text-shadow: 0 0 12px var(--amber2); }
+    .subtitle { font-size: 0.65rem; color: var(--dim); letter-spacing: .15em; }
+
+    .sol-display {
+      font-size: 2rem;
+      color: var(--green);
+      text-shadow: 0 0 10px var(--green);
+      text-align: right;
+    }
+    .sol-label { font-size: 0.6rem; color: var(--dim); display: block; letter-spacing: .15em; }
+
+    /* ── Panels grid ──────────────────────────────────────────────── */
+    .row { display: flex; gap: 8px; }
+    .col { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+
+    .panel-title {
+      font-size: 0.6rem;
+      letter-spacing: .18em;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Resource bars ────────────────────────────────────────────── */
+    .resource-grid {
+      display: grid;
+      grid-template-columns: 70px 1fr 38px;
+      align-items: center;
+      gap: 4px 8px;
+      row-gap: 6px;
+    }
+
+    .res-label { font-size: 0.72rem; color: var(--text); }
+    .bar-wrap {
+      height: 10px;
+      background: #1a1400;
+      border: 1px solid #2a2000;
+      position: relative;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      transition: width 0.4s ease, background-color 0.4s;
+    }
+    .bar-fill.ok   { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+    .bar-fill.warn { background: var(--warn);   box-shadow: 0 0 6px var(--warn); }
+    .bar-fill.crit { background: var(--crit);   box-shadow: 0 0 8px var(--crit); animation: pulse 0.6s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    .bar-val { font-size: 0.68rem; color: var(--amber); text-align: right; }
+
+    /* ── Crew panel ───────────────────────────────────────────────── */
+    .crew-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .crew-member {
+      display: grid;
+      grid-template-columns: 28px 1fr 55px;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .crew-icon {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--dim);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      background: #1a1400;
+    }
+    .crew-icon.dead {
+      border-color: var(--crit);
+      opacity: 0.4;
+      filter: grayscale(1);
+    }
+
+    .crew-info { display: flex; flex-direction: column; gap: 2px; }
+    .crew-name { font-size: 0.68rem; }
+    .crew-name.dead { color: var(--crit); text-decoration: line-through; }
+    .health-bar { height: 5px; background: #1a1400; border: 1px solid #2a2000; }
+    .health-fill { height: 100%; transition: width 0.4s, background-color 0.4s; }
+
+    .crew-hp { font-size: 0.62rem; color: var(--dim); text-align: right; }
+    .crew-hp.dead { color: var(--crit); }
+
+    /* ── Mars map ─────────────────────────────────────────────────── */
+    #mars-map {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      background:
+        radial-gradient(ellipse 60% 30% at 30% 70%, #3d1800 0%, transparent 70%),
+        radial-gradient(ellipse 40% 20% at 70% 50%, #2a0e00 0%, transparent 60%),
+        linear-gradient(180deg, #1a0800 0%, #2d0f00 50%, #1a0800 100%);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    /* Horizon line */
+    #mars-map::before {
+      content: '';
+      position: absolute;
+      bottom: 55px; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #7a2e00 20%, #b84400 50%, #7a2e00 80%, transparent);
+    }
+
+    /* Stars */
+    #mars-map::after {
+      content: '· · ·  ·  · · ·   ·  ·   · · ·  ·   ·  · ·  ·  · ·   · · ·  ·';
+      position: absolute;
+      top: 4px; left: 10px;
+      color: rgba(255,176,0,0.35);
+      font-size: 0.5rem;
+      letter-spacing: 4px;
+    }
+
+    .building {
+      position: absolute;
+      bottom: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: default;
+    }
+
+    .building-body {
+      position: relative;
+      border: 1px solid var(--border);
+    }
+
+    .blink-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      position: absolute;
+      top: -3px; right: -3px;
+      animation: blink-anim 2s infinite;
+    }
+    @keyframes blink-anim { 0%,100%{opacity:1} 50%{opacity:0.1} }
+    .blink-dot.ok   { background: var(--green);  box-shadow: 0 0 4px var(--green); }
+    .blink-dot.warn { background: var(--warn);   box-shadow: 0 0 4px var(--warn); }
+    .blink-dot.crit { background: var(--crit);   box-shadow: 0 0 6px var(--crit); animation: pulse 0.5s infinite; }
+
+    .building-label { font-size: 0.5rem; color: var(--dim); margin-top: 2px; letter-spacing: .05em; }
+
+    /* Ground shadow */
+    .building::after {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 3px;
+      background: rgba(0,0,0,0.5);
+      filter: blur(2px);
+    }
+
+    /* Dome */
+    .dome {
+      width: 60px; height: 32px;
+      background: linear-gradient(180deg, #2a1800 0%, #1a0e00 100%);
+      border-radius: 50% 50% 0 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+    }
+
+    /* Solar array */
+    .solar { width: 80px; height: 12px; background: linear-gradient(90deg, #1a1800 10%, #2a2400 50%, #1a1800 90%); }
+    .solar::before {
+      content: '▌▌▌▌▌▌▌';
+      position: absolute;
+      top: 1px; left: 4px;
+      font-size: 0.55rem;
+      color: #4a4000;
+      letter-spacing: 3px;
+    }
+
+    /* Hab */
+    .hab { width: 70px; height: 28px; background: linear-gradient(180deg, #1e1200 0%, #130b00 100%); }
+
+    /* Comms dish */
+    .comms { width: 20px; height: 24px; background: transparent; }
+    .comms::before {
+      content: '((';
+      position: absolute;
+      top: 0; left: 2px;
+      font-size: 1.1rem;
+      color: var(--dim);
+      line-height: 1;
+    }
+
+    /* Terrain bumps */
+    .terrain-bump {
+      position: absolute;
+      bottom: 55px;
+      border-radius: 50% 50% 0 0;
+      background: linear-gradient(180deg, #4a1e00 0%, #2d0f00 100%);
+    }
+
+    /* ── Log panel ────────────────────────────────────────────────── */
+    #log-box {
+      height: 110px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    #log-box::-webkit-scrollbar { width: 4px; }
+    #log-box::-webkit-scrollbar-track { background: #0a0800; }
+    #log-box::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .log-entry {
+      font-size: 0.68rem;
+      padding: 1px 0;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .log-entry.info  { color: var(--text); }
+    .log-entry.warn  { color: var(--warn); }
+    .log-entry.crit  { color: var(--crit); }
+    .log-entry.good  { color: var(--green); }
+    .log-entry.sol   { color: var(--amber); font-weight: bold; }
+
+    /* ── Event panel ──────────────────────────────────────────────── */
+    #event-panel {
+      background: #0e0b00;
+      border: 1px solid var(--amber2);
+      padding: 12px;
+      display: none;
+    }
+    #event-panel.active { display: block; }
+
+    #event-title {
+      font-size: 0.9rem;
+      color: var(--amber);
+      text-shadow: 0 0 8px var(--amber2);
+      margin-bottom: 6px;
+      letter-spacing: .1em;
+    }
+
+    #event-desc {
+      font-size: 0.72rem;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    #event-choices { display: flex; flex-direction: column; gap: 6px; }
+
+    .choice-btn {
+      background: #1a1400;
+      border: 1px solid var(--dim);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.7rem;
+      padding: 7px 12px;
+      text-align: left;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .choice-btn:hover {
+      border-color: var(--amber);
+      background: #2a2000;
+      color: var(--amber);
+    }
+
+    /* ── Next sol button ──────────────────────────────────────────── */
+    #next-sol-btn {
+      align-self: center;
+      background: #1a1400;
+      border: 1px solid var(--amber);
+      color: var(--amber);
+      font-family: inherit;
+      font-size: 0.8rem;
+      letter-spacing: .15em;
+      padding: 8px 28px;
+      cursor: pointer;
+      text-shadow: 0 0 6px var(--amber2);
+      box-shadow: 0 0 8px rgba(255,176,0,0.2);
+      transition: background 0.15s, box-shadow 0.15s;
+      display: none;
+    }
+    #next-sol-btn:hover {
+      background: #2a2000;
+      box-shadow: 0 0 16px rgba(255,176,0,0.5);
+    }
+
+    /* ── Score/stats bar ──────────────────────────────────────────── */
+    #stats-bar {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: .1em;
+    }
+    .stat-val { color: var(--amber); }
+
+    /* ── Game over / win screens ──────────────────────────────────── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #overlay.show { display: flex; }
+
+    #overlay-box {
+      border: 2px solid var(--amber);
+      background: var(--panel);
+      padding: 36px 48px;
+      text-align: center;
+      max-width: 500px;
+      box-shadow: 0 0 40px rgba(255,176,0,0.3);
+    }
+    #overlay-title {
+      font-size: 2rem;
+      letter-spacing: .2em;
+      margin-bottom: 12px;
+    }
+    #overlay-msg {
+      font-size: 0.8rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    #overlay-score {
+      font-size: 1.4rem;
+      color: var(--green);
+      text-shadow: 0 0 10px var(--green);
+      margin-bottom: 20px;
+    }
+    #restart-btn {
+      background: #1a1400;
+      border: 1px solid var(--amber);
+      color: var(--amber);
+      font-family: inherit;
+      font-size: 0.8rem;
+      letter-spacing: .15em;
+      padding: 10px 32px;
+      cursor: pointer;
+    }
+    #restart-btn:hover { background: #2a2000; }
+
+    /* ── Ticker ───────────────────────────────────────────────────── */
+    #ticker {
+      font-size: 0.58rem;
+      color: var(--dim);
+      border-top: 1px solid var(--border);
+      padding-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    #ticker-inner {
+      display: inline-block;
+      animation: ticker-scroll 30s linear infinite;
+    }
+    @keyframes ticker-scroll {
+      0%   { transform: translateX(100vw); }
+      100% { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Game over / win overlay -->
+<div id="overlay">
+  <div id="overlay-box">
+    <div id="overlay-title"></div>
+    <div id="overlay-msg"></div>
+    <div id="overlay-score"></div>
+    <button id="restart-btn" onclick="restartGame()">[ RESTART MISSION ]</button>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="title-block">
+      <div class="title">▸ ARES-1 COLONY COMMAND ◂</div>
+      <div class="subtitle">MARS SURFACE OPERATIONS — MISSION CONTROL INTERFACE v2.4</div>
+    </div>
+    <div id="stats-bar">
+      <span>SCORE: <span class="stat-val" id="score-val">0</span></span>
+      <span>ALIVE: <span class="stat-val" id="alive-val">5</span>/5</span>
+      <span>EVENTS: <span class="stat-val" id="events-val">0</span></span>
+    </div>
+    <div class="sol-display">
+      <span class="sol-label">MARTIAN SOL</span>
+      <span id="sol-counter">001</span>
+      <span class="sol-label" style="font-size:0.5rem">/ 100</span>
+    </div>
+  </header>
+
+  <!-- Mars map -->
+  <div id="mars-map">
+    <!-- terrain bumps -->
+    <div class="terrain-bump" style="left:5%;width:80px;height:20px"></div>
+    <div class="terrain-bump" style="left:18%;width:50px;height:14px"></div>
+    <div class="terrain-bump" style="left:60%;width:110px;height:24px"></div>
+    <div class="terrain-bump" style="left:80%;width:60px;height:16px"></div>
+    <div class="terrain-bump" style="right:3%;width:40px;height:12px"></div>
+
+    <!-- Buildings -->
+    <div class="building" style="left:12%">
+      <div class="building-body dome">
+        <div class="blink-dot ok" id="b-hab"></div>
+      </div>
+      <div class="building-label">HAB MODULE</div>
+    </div>
+
+    <div class="building" style="left:25%">
+      <div class="building-body hab">
+        <div class="blink-dot ok" id="b-life"></div>
+      </div>
+      <div class="building-label">LIFE SUPPORT</div>
+    </div>
+
+    <div class="building" style="left:42%">
+      <div class="building-body dome" style="width:80px;height:40px">
+        <div class="blink-dot ok" id="b-cmd"></div>
+      </div>
+      <div class="building-label">CMD CENTER</div>
+    </div>
+
+    <div class="building" style="left:62%">
+      <div class="building-body solar">
+        <div class="blink-dot ok" id="b-solar"></div>
+      </div>
+      <div class="building-label">SOLAR ARRAY</div>
+    </div>
+
+    <div class="building" style="left:78%">
+      <div class="building-body comms" style="position:relative">
+        <div class="blink-dot ok" id="b-comms"></div>
+      </div>
+      <div class="building-label">COMMS</div>
+    </div>
+
+    <!-- Dust storm overlay (hidden by default) -->
+    <div id="dust-storm" style="
+      display:none;
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg,transparent,rgba(160,60,0,0.55));
+      pointer-events:none;
+    "></div>
+  </div>
+
+  <!-- Main panels -->
+  <div class="row">
+    <!-- Resources -->
+    <div class="col" style="flex:1.2">
+      <div class="panel">
+        <div class="panel-title">⬡ COLONY RESOURCES</div>
+        <div class="resource-grid" id="resource-grid">
+          <!-- dynamically rendered -->
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="panel">
+        <div class="panel-title">⬡ MISSION LOG</div>
+        <div id="log-box"></div>
+      </div>
+    </div>
+
+    <!-- Crew -->
+    <div class="col" style="flex:0.8">
+      <div class="panel">
+        <div class="panel-title">⬡ CREW STATUS</div>
+        <div class="crew-list" id="crew-list">
+          <!-- dynamically rendered -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event panel -->
+  <div id="event-panel">
+    <div id="event-title"></div>
+    <div id="event-desc"></div>
+    <div id="event-choices"></div>
+  </div>
+
+  <!-- Next sol button -->
+  <button id="next-sol-btn" onclick="advanceSol()">[ ADVANCE TO NEXT SOL ▶ ]</button>
+
+  <!-- Ticker -->
+  <div id="ticker">
+    <span id="ticker-inner">
+      ARES-1 MISSION CONTROL ··· SOL TRACKING ACTIVE ··· MONITORING COLONY VITALS ···
+      CREW BIOMETRICS NOMINAL ··· SOLAR ARRAY OUTPUT STABLE ··· LIFE SUPPORT ONLINE ···
+      COMMS LINK ESTABLISHED ··· DUST ACTIVITY: LOW ··· TEMPERATURE: -63°C ···
+      ATMOSPHERIC PRESSURE: 0.6 kPa ··· GRAVITY: 3.72 m/s² ··· ARES-1 MISSION CONTROL ···
+    </span>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ARES-1 COLONY COMMAND  —  Game Engine
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Constants ─────────────────────────────────────────────── */
+const MAX_SOL      = 100;
+const CREW_NAMES   = ['CHEN, K.', 'VASQUEZ, M.', 'OSEI, A.', 'PETROV, N.', 'NAKAMURA, Y.'];
+const CREW_ICONS   = ['👩‍🚀','👨‍🚀','🧑‍🚀','👨‍🔬','👩‍🔬'];
+
+const RESOURCE_KEYS = ['oxygen','food','water','power','morale'];
+const RESOURCE_LABELS = {
+  oxygen: 'OXYGEN',  food: 'FOOD',  water: 'WATER',
+  power:  'POWER',   morale: 'MORALE'
+};
+
+// Passive drain per sol — life support actively recycles O2/water,
+// solar panels provide power; these represent net consumption.
+const BASE_DRAIN = {
+  oxygen: 0.9,
+  food:   1.4,
+  water:  1.1,
+  power:  1.3,
+  morale: 0.5
+};
+
+/* ── Game state ────────────────────────────────────────────── */
+let state = {};
+
+function initState() {
+  state = {
+    sol:        1,
+    score:      0,
+    eventsHit:  0,
+    gameOver:   false,
+    eventPending: false,
+    dustStorm:  false,
+
+    resources: {
+      oxygen: 95,
+      food:   92,
+      water:  88,
+      power:  92,
+      morale: 75
+    },
+
+    crew: CREW_NAMES.map((name, i) => ({
+      name,
+      icon: CREW_ICONS[i],
+      hp:   100,
+      alive: true,
+      role: ['Cmdr','Medic','Engineer','Geologist','Pilot'][i]
+    }))
+  };
+}
+
+/* ── Events definition ─────────────────────────────────────── */
+const EVENTS = [
+  // 0 – Solar Flare
+  {
+    id:    'solar_flare',
+    title: '☀ SOLAR FLARE DETECTED',
+    desc:  'Sensors detect a powerful X-class solar flare incoming. The CME will hit the colony in approximately 2 hours. Power systems and electronics are at risk.',
+    choices: [
+      {
+        text: '[A] Power down non-essential systems and shelter crew in the shielded hab.',
+        apply: (s) => {
+          delta(s, { power: -12, morale: -5 });
+          injure(s, 0, 8);
+          log('Crew sheltered. Power took minor damage from residual radiation.', 'warn');
+          score(s, 25);
+        }
+      },
+      {
+        text: '[B] Deploy emergency Faraday shield — burns 20 power but protects all systems.',
+        apply: (s) => {
+          delta(s, { power: -20, morale: +5 });
+          log('Faraday shield held! All systems nominal. Crew morale boosted.', 'good');
+          score(s, 40);
+        }
+      },
+      {
+        text: '[C] Ignore the flare and continue operations.',
+        apply: (s) => {
+          delta(s, { power: -30, morale: -15 });
+          injureRandom(s, 20);
+          log('CRITICAL: Flare struck unshielded systems. Heavy damage and crew injuries!', 'crit');
+          score(s, -10);
+        }
+      }
+    ]
+  },
+
+  // 1 – Dust Storm
+  {
+    id:    'dust_storm',
+    title: '🌪 DUST STORM APPROACHING',
+    desc:  'A massive regional dust storm is rolling in from Hellas Planitia. Visibility will drop to near zero and solar panels will be heavily obscured.',
+    choices: [
+      {
+        text: '[A] Recall all outside crew and perform pre-storm equipment lockdown.',
+        apply: (s) => {
+          s.dustStorm = true;
+          delta(s, { power: -15, morale: -5 });
+          log('Storm lockdown complete. Power reduced while storm persists.', 'warn');
+          score(s, 20);
+          updateDustStorm();
+        }
+      },
+      {
+        text: '[B] Quickly harvest extra regolith samples before locking down (+food equiv.).',
+        apply: (s) => {
+          s.dustStorm = true;
+          delta(s, { power: -20, food: +12, morale: -8 });
+          injureRandom(s, 15);
+          log('Samples secured but one crew member was caught in early winds.', 'warn');
+          score(s, 15);
+          updateDustStorm();
+        }
+      },
+      {
+        text: '[C] Power backup lights and maintain indoor morale activities.',
+        apply: (s) => {
+          s.dustStorm = true;
+          delta(s, { power: -10, morale: +10 });
+          log('Morale event held. Crew spirits higher despite storm outside.', 'good');
+          score(s, 30);
+          updateDustStorm();
+        }
+      }
+    ]
+  },
+
+  // 2 – Oxygen Leak
+  {
+    id:    'o2_leak',
+    title: '⚠ OXYGEN LEAK DETECTED',
+    desc:  'Hab Module Sector 3 is showing a slow oxygen seep. CO₂ sensors are spiking. If unaddressed, the entire hab atmosphere will be compromised within hours.',
+    choices: [
+      {
+        text: '[A] Send engineer team to patch the leak immediately.',
+        apply: (s) => {
+          delta(s, { oxygen: -10, morale: -5 });
+          log('Leak patched. Minor O₂ loss during repair window.', 'warn');
+          score(s, 30);
+        }
+      },
+      {
+        text: '[B] Seal off the affected sector and reroute O₂ from reserves.',
+        apply: (s) => {
+          delta(s, { oxygen: -12, power: -5 });
+          log('Sector sealed. Some O₂ consumed in rerouting.', 'warn');
+          score(s, 15);
+        }
+      },
+      {
+        text: '[C] Attempt emergency hab-wide re-pressurisation — risky but faster.',
+        apply: (s) => {
+          const success = Math.random() > 0.4;
+          if (success) {
+            delta(s, { oxygen: -5, power: -15 });
+            log('Repressurisation SUCCESS. Minimal resource loss.', 'good');
+            score(s, 50);
+          } else {
+            delta(s, { oxygen: -35, power: -15 });
+            injureRandom(s, 30);
+            log('Repressurisation FAILED — blowback caused injuries and heavy O₂ loss!', 'crit');
+            score(s, -20);
+          }
+        }
+      }
+    ]
+  },
+
+  // 3 – Water Reclaimer Malfunction
+  {
+    id:    'water_fault',
+    title: '💧 WATER RECLAIMER OFFLINE',
+    desc:  'The primary water reclamation unit has gone offline due to a particulate blockage in the filtration membrane. Secondary reserves are limited.',
+    choices: [
+      {
+        text: '[A] Full maintenance overhaul — takes time but fixes it properly.',
+        apply: (s) => {
+          delta(s, { water: -15, power: -8, morale: -3 });
+          log('Overhaul complete. Reclaimer fully operational.', 'good');
+          score(s, 35);
+        }
+      },
+      {
+        text: '[B] Quick bypass repair — fast but the unit may fail again soon.',
+        apply: (s) => {
+          delta(s, { water: -5, power: -4 });
+          log('Bypass applied. Reclaimer running at 60% capacity.', 'warn');
+          score(s, 10);
+        }
+      },
+      {
+        text: '[C] Ration water severely while OSEI works on it over 2 sols.',
+        apply: (s) => {
+          delta(s, { water: -25, morale: -12 });
+          injure(s, 2, 10); // OSEI strains herself
+          log('Strict rationing in effect. Crew suffering but reclaimer repaired.', 'warn');
+          score(s, 20);
+        }
+      }
+    ]
+  },
+
+  // 4 – Geological Discovery
+  {
+    id:    'geo_discovery',
+    title: '🔭 SUBSURFACE ANOMALY DETECTED',
+    desc:  'Ground-penetrating radar has picked up what appears to be a subsurface water-ice deposit approximately 8 metres below the surface near Grid E-7.',
+    choices: [
+      {
+        text: '[A] Dispatch a drill team immediately to extract ice deposits.',
+        apply: (s) => {
+          delta(s, { water: +22, power: -15, morale: +10 });
+          injureRandom(s, 8);
+          log('ICE STRIKE! Water reserves significantly boosted. Crew celebrating!', 'good');
+          score(s, 55);
+        }
+      },
+      {
+        text: '[B] Survey the site thoroughly first before extraction.',
+        apply: (s) => {
+          delta(s, { morale: +8, power: -6, water: +10 });
+          log('Thorough survey complete. Moderate water cache extracted safely.', 'good');
+          score(s, 35);
+        }
+      },
+      {
+        text: '[C] Mark for later — current resources are sufficient.',
+        apply: (s) => {
+          delta(s, { morale: +3 });
+          log('Deposit logged for future extraction. No resources expended.', 'info');
+          score(s, 10);
+        }
+      }
+    ]
+  },
+
+  // 5 – Crew Conflict
+  {
+    id:    'crew_conflict',
+    title: '👥 CREW PSYCHOLOGICAL INCIDENT',
+    desc:  'A serious argument has erupted between CHEN and PETROV over resource allocation decisions. Raised voices detected in Hab Module B. Morale is at a tipping point.',
+    choices: [
+      {
+        text: '[A] Call a full crew meeting to address grievances openly.',
+        apply: (s) => {
+          delta(s, { morale: +18, power: -3 });
+          log('Open dialogue session held. Tensions eased significantly.', 'good');
+          score(s, 30);
+        }
+      },
+      {
+        text: '[B] Order both crew members to stand down and focus on work.',
+        apply: (s) => {
+          delta(s, { morale: -8 });
+          log('Conflict suppressed. Underlying tensions remain unresolved.', 'warn');
+          score(s, 5);
+        }
+      },
+      {
+        text: '[C] Ask VASQUEZ (Medic) to conduct counselling sessions.',
+        apply: (s) => {
+          delta(s, { morale: +25, food: -5 }); // comfort food used
+          log('Counselling effective. Crew unity restored. Morale sharply improved.', 'good');
+          score(s, 45);
+        }
+      }
+    ]
+  },
+
+  // 6 – Equipment Failure
+  {
+    id:    'equipment_fail',
+    title: '⚡ POWER GRID FAULT',
+    desc:  'A cascading fault in the power distribution bus has triggered an automated partial shutdown. Three non-critical modules are offline. Battery reserves draining.',
+    choices: [
+      {
+        text: '[A] Emergency reroute through backup circuits.',
+        apply: (s) => {
+          delta(s, { power: -20, morale: -5 });
+          log('Rerouting complete. Power grid stabilised at reduced capacity.', 'warn');
+          score(s, 25);
+        }
+      },
+      {
+        text: '[B] NAKAMURA performs full circuit diagnostic and repair.',
+        apply: (s) => {
+          const success = Math.random() > 0.35;
+          if (success) {
+            delta(s, { power: +10, morale: +8 });
+            log('Full repair successful. Grid running at 110% — bonus efficiency!', 'good');
+            score(s, 55);
+          } else {
+            delta(s, { power: -30 });
+            injure(s, 4, 15);
+            log('Repair failed. Electrical arc injured NAKAMURA and worsened the fault.', 'crit');
+            score(s, -5);
+          }
+        }
+      },
+      {
+        text: '[C] Shut down life-support luxuries to conserve power.',
+        apply: (s) => {
+          delta(s, { power: +15, morale: -18 });
+          log('Comfort systems offline. Power conserved but crew is miserable.', 'warn');
+          score(s, 10);
+        }
+      }
+    ]
+  },
+
+  // 7 – Medical Emergency
+  {
+    id:    'medical',
+    title: '🏥 MEDICAL EMERGENCY',
+    desc:  'OSEI reports acute decompression sickness symptoms — possibly from a hairline suit seal failure on the last EVA. Immediate medical attention required.',
+    choices: [
+      {
+        text: '[A] VASQUEZ administers full treatment protocol — consumes medical supplies.',
+        apply: (s) => {
+          delta(s, { food: -8, morale: -5 });
+          heal(s, 2, 30);  // OSEI
+          log('Treatment successful. OSEI recovering well.', 'good');
+          score(s, 40);
+        }
+      },
+      {
+        text: '[B] Pressurize the emergency hyperbaric chamber (power-intensive).',
+        apply: (s) => {
+          delta(s, { power: -20 });
+          heal(s, 2, 50);
+          log('Hyperbaric treatment effective. OSEI fully stabilised.', 'good');
+          score(s, 50);
+        }
+      },
+      {
+        text: '[C] Rest and basic observation only — hope it resolves naturally.',
+        apply: (s) => {
+          const ok = Math.random() > 0.5;
+          if (ok) {
+            log('OSEI recovered without intervention. Lucky outcome.', 'warn');
+            score(s, 5);
+          } else {
+            injure(s, 2, 40);
+            delta(s, { morale: -15 });
+            log('OSEI\'s condition worsened without treatment! Crew morale shattered.', 'crit');
+            score(s, -20);
+          }
+        }
+      }
+    ]
+  },
+
+  // 8 – Supply Drop
+  {
+    id:    'supply_drop',
+    title: '🛸 EARTH RESUPPLY DRONE INBOUND',
+    desc:  'An unscheduled supply drone from Earth has entered Martian orbit. It carries limited payload — you can only safely land one critical supply package.',
+    choices: [
+      {
+        text: '[A] Request the food & water package (critical nutrition).',
+        apply: (s) => {
+          delta(s, { food: +20, water: +18, morale: +8 });
+          log('Nutrition package landed safely. Food and water reserves replenished!', 'good');
+          score(s, 40);
+        }
+      },
+      {
+        text: '[B] Request the power cell & O₂ canister array (energy + air).',
+        apply: (s) => {
+          delta(s, { power: +20, oxygen: +15, morale: +6 });
+          log('Power cells and O₂ canisters installed. Energy and air reserves topped up!', 'good');
+          score(s, 45);
+        }
+      },
+      {
+        text: '[C] Request the medical & morale package (crew well-being).',
+        apply: (s) => {
+          delta(s, { morale: +22 });
+          healAll(s, 20);
+          log('Medical and morale supplies received. Crew health and spirits soaring!', 'good');
+          score(s, 50);
+        }
+      }
+    ]
+  },
+
+  // 9 – Microbe Discovery
+  {
+    id:    'microbe',
+    title: '🔬 ANOMALOUS BIOSIGNATURE DETECTED',
+    desc:  'The geology team has isolated what may be fossilised microbial structures in a regolith sample from the recent drill site. Confirmation tests are underway. This could be the greatest discovery in human history.',
+    choices: [
+      {
+        text: '[A] Drop all non-essential tasks and focus the entire crew on analysis.',
+        apply: (s) => {
+          delta(s, { morale: +30, power: -15, food: -8, water: -6 });
+          log('EXTRAORDINARY: Biosignature confirmed! Earth broadcasts full coverage. MASSIVE morale surge!', 'good');
+          score(s, 100);
+        }
+      },
+      {
+        text: '[B] Document and preserve the sample; continue normal operations.',
+        apply: (s) => {
+          delta(s, { morale: +15, power: -5 });
+          log('Sample documented and quarantined for return mission. Science milestone logged.', 'good');
+          score(s, 60);
+        }
+      },
+      {
+        text: '[C] Treat with caution — sterilise and quarantine the entire lab sector.',
+        apply: (s) => {
+          delta(s, { morale: -5, power: -10 });
+          log('Quarantine protocols enacted. Sample may be lost — but biohazard risk eliminated.', 'warn');
+          score(s, 20);
+        }
+      }
+    ]
+  },
+
+  // 10 – Greenhouse Harvest
+  {
+    id:    'greenhouse',
+    title: '🌱 GREENHOUSE HARVEST READY',
+    desc:  'The hydroponic greenhouse has produced its first significant crop yield. The algae bioreactors are also running above nominal — oxygen output is elevated.',
+    choices: [
+      {
+        text: '[A] Harvest full crop and boost algae output — maximise food and O₂.',
+        apply: (s) => {
+          delta(s, { food: +18, oxygen: +15, morale: +8 });
+          log('Bumper harvest! Food and oxygen reserves boosted. Crew morale high.', 'good');
+          score(s, 50);
+        }
+      },
+      {
+        text: '[B] Harvest food now, redirect algae energy to power generation instead.',
+        apply: (s) => {
+          delta(s, { food: +15, power: +12, morale: +6 });
+          log('Food harvested and algae surplus converted to power. Efficient balance.', 'good');
+          score(s, 40);
+        }
+      },
+      {
+        text: '[C] Leave it growing longer for an even larger harvest next sol.',
+        apply: (s) => {
+          delta(s, { food: +8, oxygen: +8, morale: +5 });
+          log('Partial harvest taken. Main crop left to mature further.', 'info');
+          score(s, 20);
+        }
+      }
+    ]
+  }
+];
+
+/* ── Helper: resource delta ────────────────────────────────── */
+function delta(s, changes) {
+  for (const [k, v] of Object.entries(changes)) {
+    if (k in s.resources) {
+      s.resources[k] = Math.min(100, Math.max(0, s.resources[k] + v));
+    }
+  }
+}
+
+function score(s, pts) {
+  s.score = Math.max(0, s.score + pts);
+}
+
+function injure(s, idx, dmg) {
+  const c = s.crew[idx];
+  if (!c || !c.alive) return;
+  c.hp = Math.max(0, c.hp - dmg);
+  if (c.hp === 0) {
+    c.alive = false;
+    log(`CREW CASUALTY: ${c.name} has died.`, 'crit');
+    score(s, -50);
+  }
+}
+
+function injureRandom(s, dmg) {
+  const alive = s.crew.filter(c => c.alive);
+  if (alive.length === 0) return;
+  const c = alive[Math.floor(Math.random() * alive.length)];
+  const idx = s.crew.indexOf(c);
+  injure(s, idx, dmg);
+}
+
+function heal(s, idx, amt) {
+  const c = s.crew[idx];
+  if (!c || !c.alive) return;
+  c.hp = Math.min(100, c.hp + amt);
+}
+
+function healAll(s, amt) {
+  s.crew.forEach((c, i) => { if (c.alive) heal(s, i, amt); });
+}
+
+/* ── Logging ───────────────────────────────────────────────── */
+function log(msg, type = 'info') {
+  const box = document.getElementById('log-box');
+  const el = document.createElement('div');
+  el.className = `log-entry ${type}`;
+  const sol = String(state.sol).padStart(3, '0');
+  el.textContent = `[SOL-${sol}] ${msg}`;
+  box.appendChild(el);
+  // Keep only last 80 entries
+  while (box.children.length > 80) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ── Render ────────────────────────────────────────────────── */
+function render() {
+  renderResources();
+  renderCrew();
+  renderBuildings();
+  renderStats();
+}
+
+function renderResources() {
+  const grid = document.getElementById('resource-grid');
+  grid.innerHTML = '';
+  for (const key of RESOURCE_KEYS) {
+    const val = state.resources[key];
+    const pct = val;
+    const cls = pct > 40 ? 'ok' : pct > 20 ? 'warn' : 'crit';
+
+    const label = document.createElement('div');
+    label.className = 'res-label';
+    label.textContent = RESOURCE_LABELS[key];
+
+    const wrap = document.createElement('div');
+    wrap.className = 'bar-wrap';
+    const fill = document.createElement('div');
+    fill.className = `bar-fill ${cls}`;
+    fill.style.width = `${pct}%`;
+    wrap.appendChild(fill);
+
+    const valEl = document.createElement('div');
+    valEl.className = 'bar-val';
+    valEl.textContent = Math.round(val);
+
+    grid.appendChild(label);
+    grid.appendChild(wrap);
+    grid.appendChild(valEl);
+  }
+}
+
+function renderCrew() {
+  const list = document.getElementById('crew-list');
+  list.innerHTML = '';
+  for (const c of state.crew) {
+    const row = document.createElement('div');
+    row.className = 'crew-member';
+
+    const icon = document.createElement('div');
+    icon.className = `crew-icon${c.alive ? '' : ' dead'}`;
+    icon.textContent = c.icon;
+
+    const info = document.createElement('div');
+    info.className = 'crew-info';
+    const name = document.createElement('div');
+    name.className = `crew-name${c.alive ? '' : ' dead'}`;
+    name.textContent = `${c.name} [${c.role}]`;
+    const hb = document.createElement('div');
+    hb.className = 'health-bar';
+    const hf = document.createElement('div');
+    hf.className = 'health-fill';
+    hf.style.width = `${c.hp}%`;
+    const hpct = c.hp;
+    hf.style.background = hpct > 50 ? 'var(--green)' : hpct > 25 ? 'var(--warn)' : 'var(--crit)';
+    if (hpct <= 25 && c.alive) hf.style.animation = 'pulse 0.6s infinite';
+    hb.appendChild(hf);
+    info.appendChild(name);
+    info.appendChild(hb);
+
+    const hp = document.createElement('div');
+    hp.className = `crew-hp${c.alive ? '' : ' dead'}`;
+    hp.textContent = c.alive ? `${Math.round(c.hp)}%` : 'KIA';
+
+    row.appendChild(icon);
+    row.appendChild(info);
+    row.appendChild(hp);
+    list.appendChild(row);
+  }
+}
+
+function renderStats() {
+  document.getElementById('sol-counter').textContent = String(state.sol).padStart(3, '0');
+  document.getElementById('score-val').textContent   = state.score;
+  document.getElementById('alive-val').textContent   = state.crew.filter(c => c.alive).length;
+  document.getElementById('events-val').textContent  = state.eventsHit;
+}
+
+function renderBuildings() {
+  // Derive building status from resources
+  const o = state.resources;
+  setBuildingStatus('b-hab',   o.oxygen  > 40 ? 'ok' : o.oxygen  > 20 ? 'warn' : 'crit');
+  setBuildingStatus('b-life',  o.water   > 40 ? 'ok' : o.water   > 20 ? 'warn' : 'crit');
+  setBuildingStatus('b-cmd',   o.morale  > 40 ? 'ok' : o.morale  > 20 ? 'warn' : 'crit');
+  setBuildingStatus('b-solar', o.power   > 40 ? 'ok' : o.power   > 20 ? 'warn' : 'crit');
+  setBuildingStatus('b-comms', (o.oxygen + o.power) / 2 > 40 ? 'ok' :
+                               (o.oxygen + o.power) / 2 > 20 ? 'warn' : 'crit');
+}
+
+function setBuildingStatus(id, status) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `blink-dot ${status}`;
+}
+
+function updateDustStorm() {
+  document.getElementById('dust-storm').style.display = state.dustStorm ? 'block' : 'none';
+}
+
+/* ── Passive drain per sol ─────────────────────────────────── */
+function applyPassiveDrain() {
+  const aliveCrew = state.crew.filter(c => c.alive).length;
+  if (aliveCrew === 0) return;
+
+  // Scale drain slightly by alive crew
+  const factor = 0.7 + (aliveCrew / 5) * 0.3;
+
+  for (const key of RESOURCE_KEYS) {
+    const drain = BASE_DRAIN[key] * factor;
+    state.resources[key] = Math.max(0, state.resources[key] - drain);
+  }
+
+  // Dust storm reduces power more
+  if (state.dustStorm) {
+    state.resources.power = Math.max(0, state.resources.power - 8);
+    // 40% chance storm clears each sol
+    if (Math.random() < 0.4) {
+      state.dustStorm = false;
+      log('Dust storm has cleared. Solar panels operational again.', 'good');
+      updateDustStorm();
+    }
+  }
+
+  // Low resources injure crew
+  if (state.resources.oxygen < 15) injureRandom(state, 15);
+  if (state.resources.food    < 10) injureRandom(state, 10);
+  if (state.resources.water   < 10) injureRandom(state, 12);
+  if (state.resources.morale  < 10) injureRandom(state, 5);
+
+  // Slight natural health recovery when morale is high
+  if (state.resources.morale > 60) {
+    state.crew.forEach((c, i) => { if (c.alive && c.hp < 100) heal(state, i, 3); });
+  }
+}
+
+/* ── Event system ──────────────────────────────────────────── */
+// Track which events fired recently to avoid repeats
+let recentEvents = [];
+
+function pickEvent() {
+  // Filter out recently fired events
+  const pool = EVENTS.filter(e => !recentEvents.includes(e.id));
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  recentEvents.push(pick.id);
+  if (recentEvents.length > 4) recentEvents.shift();
+  return pick;
+}
+
+function showEvent(evt) {
+  state.eventPending = true;
+  state.eventsHit++;
+
+  document.getElementById('event-panel').classList.add('active');
+  document.getElementById('event-title').textContent = evt.title;
+  document.getElementById('event-desc').textContent  = evt.desc;
+
+  const choicesEl = document.getElementById('event-choices');
+  choicesEl.innerHTML = '';
+
+  evt.choices.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice.text;
+    btn.onclick = () => {
+      choice.apply(state);
+      hideEvent();
+      finishSol();
+    };
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById('next-sol-btn').style.display = 'none';
+}
+
+function hideEvent() {
+  document.getElementById('event-panel').classList.remove('active');
+  document.getElementById('event-choices').innerHTML = '';
+  state.eventPending = false;
+}
+
+/* ── Sol loop ──────────────────────────────────────────────── */
+function advanceSol() {
+  if (state.gameOver || state.eventPending) return;
+
+  document.getElementById('next-sol-btn').style.display = 'none';
+
+  log(`— SOL ${String(state.sol).padStart(3,'0')} BEGIN —`, 'sol');
+
+  applyPassiveDrain();
+  render();
+
+  if (checkGameOver()) return;
+
+  // Event fires every sol (guaranteed — core design)
+  const evt = pickEvent();
+  showEvent(evt);
+}
+
+function finishSol() {
+  render();
+  if (checkGameOver()) return;
+
+  // Award score for surviving the sol
+  score(state, 5 + state.sol);
+
+  // Winning
+  if (state.sol >= MAX_SOL) {
+    showWin();
+    return;
+  }
+
+  state.sol++;
+  render();
+
+  document.getElementById('next-sol-btn').style.display = 'block';
+}
+
+/* ── Game-over checks ──────────────────────────────────────── */
+function checkGameOver() {
+  const alive = state.crew.filter(c => c.alive).length;
+  if (alive === 0) {
+    showGameOver('ALL CREW LOST', 'The last colonist has perished. Mission ARES-1 has failed.');
+    return true;
+  }
+
+  const critical = ['oxygen', 'food', 'water'];
+  for (const k of critical) {
+    if (state.resources[k] <= 0) {
+      const labels = { oxygen: 'OXYGEN DEPLETED', food: 'FOOD SUPPLY EXHAUSTED', water: 'WATER RESERVES EMPTY' };
+      showGameOver(labels[k], `Colony ${labels[k].toLowerCase()}. Without ${k}, survival is impossible.`);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function showGameOver(reason, detail) {
+  state.gameOver = true;
+  const overlay = document.getElementById('overlay');
+  document.getElementById('overlay-title').textContent  = '✖ MISSION FAILED';
+  document.getElementById('overlay-title').style.color  = 'var(--crit)';
+  document.getElementById('overlay-msg').innerHTML =
+    `<strong style="color:var(--crit)">${reason}</strong><br>${detail}<br><br>` +
+    `Survived <strong>${state.sol}</strong> of ${MAX_SOL} sols.<br>` +
+    `Crew lost: <strong>${state.crew.filter(c=>!c.alive).length}</strong> / 5`;
+  document.getElementById('overlay-score').textContent  = `FINAL SCORE: ${state.score}`;
+  document.getElementById('overlay-score').style.color  = 'var(--warn)';
+  overlay.classList.add('show');
+}
+
+function showWin() {
+  state.gameOver = true;
+  const alive    = state.crew.filter(c => c.alive).length;
+  const bonus    = alive * 200;
+  score(state, bonus);
+  render();
+
+  const overlay = document.getElementById('overlay');
+  document.getElementById('overlay-title').textContent = '✔ MISSION COMPLETE';
+  document.getElementById('overlay-title').style.color = 'var(--green)';
+  document.getElementById('overlay-msg').innerHTML =
+    `<strong style="color:var(--green)">100 SOLS SURVIVED!</strong><br>` +
+    `Colony ARES-1 has endured. ${alive} of 5 crew members are alive.<br><br>` +
+    `Survival bonus: +${bonus} points`;
+  document.getElementById('overlay-score').textContent = `FINAL SCORE: ${state.score}`;
+  document.getElementById('overlay-score').style.color = 'var(--green)';
+  overlay.classList.add('show');
+}
+
+/* ── Restart ───────────────────────────────────────────────── */
+function restartGame() {
+  recentEvents = [];
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('log-box').innerHTML = '';
+  initState();
+  render();
+  updateDustStorm();
+  document.getElementById('next-sol-btn').style.display = 'block';
+  log('ARES-1 Colony Command system online. Awaiting first sol.', 'good');
+  log('All systems nominal. Crew at full strength. Mission begins.', 'info');
+}
+
+/* ── Boot ──────────────────────────────────────────────────── */
+initState();
+render();
+updateDustStorm();
+document.getElementById('next-sol-btn').style.display = 'block';
+log('ARES-1 Colony Command system online. All systems nominal.', 'good');
+log('Crew complement: 5 personnel. Mission duration: 100 sols.', 'info');
+log('Resources loaded. Awaiting mission commander go/no-go.', 'info');
+</script>
+</body>
+</html>
