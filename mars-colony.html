@@ -711,6 +711,22 @@
     letter-spacing: 2px;
   }
 
+  /* ===== SOUND TOGGLE ===== */
+  .sound-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    border: 1px solid var(--text-dim);
+    color: var(--text-dim);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sound-btn:hover { border-color: var(--green); color: var(--green); }
+  .sound-btn.on { border-color: var(--green); color: var(--green); }
+
   /* ===== INTRO SCREEN ===== */
   .intro-screen {
     position: fixed; inset: 0; z-index: 3000;
@@ -1108,6 +1124,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <div class="diff-indicator normal" id="diffIndicator">NORMAL</div>
+    <button class="sound-btn on" id="soundBtn" onclick="toggleSound()">🔊 SFX</button>
     <button class="upgrade-open-btn" onclick="openUpgrades()">⬆ UPGRADES</button>
     <div class="sol-counter">SOL <span id="solNum">001</span> / 100</div>
   </div>
@@ -1282,6 +1299,7 @@
       <div class="upgrade-title">⬆ COLONY UPGRADES</div>
       <div style="display:flex;align-items:center;gap:16px">
     <div class="diff-indicator normal" id="diffIndicator">NORMAL</div>
+    <button class="sound-btn on" id="soundBtn" onclick="toggleSound()">🔊 SFX</button>
         <div class="upgrade-score"><span>SCORE: </span><span id="upgradeScore">0</span> pts</div>
         <button class="close-btn" onclick="closeUpgrades()">✕</button>
       </div>
@@ -1452,6 +1470,153 @@ const EVENTS = [
 ];
 
 
+// ========== SOUND ENGINE (Web Audio API) ==========
+let audioCtx = null;
+let soundEnabled = true;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('soundBtn');
+  btn.textContent = soundEnabled ? '🔊 SFX' : '🔇 SFX';
+  btn.className = 'sound-btn' + (soundEnabled ? ' on' : '');
+}
+
+function playTone(freq, duration, type='sine', volume=0.3, delay=0) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(volume, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + duration + 0.05);
+  } catch(e) {}
+}
+
+function playSequence(notes) {
+  // notes: [{freq, dur, delay, type, vol}]
+  notes.forEach(n => playTone(n.freq, n.dur, n.type||'sine', n.vol||0.25, n.delay||0));
+}
+
+// ── Named sound effects ──────────────────────────────────────────────────────
+
+function sfxNextSol() {
+  // Short ascending beep sequence - new sol advancing
+  playSequence([
+    { freq: 220, dur: 0.08, delay: 0,    type: 'square', vol: 0.15 },
+    { freq: 330, dur: 0.08, delay: 0.09, type: 'square', vol: 0.15 },
+    { freq: 440, dur: 0.12, delay: 0.18, type: 'square', vol: 0.2  },
+  ]);
+}
+
+function sfxAlert() {
+  // Urgent pulsing alarm - critical resource
+  playSequence([
+    { freq: 880, dur: 0.12, delay: 0,    type: 'sawtooth', vol: 0.2 },
+    { freq: 660, dur: 0.12, delay: 0.15, type: 'sawtooth', vol: 0.2 },
+    { freq: 880, dur: 0.12, delay: 0.30, type: 'sawtooth', vol: 0.2 },
+    { freq: 660, dur: 0.12, delay: 0.45, type: 'sawtooth', vol: 0.2 },
+  ]);
+}
+
+function sfxEventAppear() {
+  // Soft incoming transmission beep
+  playSequence([
+    { freq: 600, dur: 0.06, delay: 0,    type: 'sine', vol: 0.18 },
+    { freq: 800, dur: 0.10, delay: 0.08, type: 'sine', vol: 0.22 },
+  ]);
+}
+
+function sfxChoiceGood() {
+  // Positive confirm chime
+  playSequence([
+    { freq: 523, dur: 0.10, delay: 0,    type: 'sine', vol: 0.25 },
+    { freq: 659, dur: 0.10, delay: 0.11, type: 'sine', vol: 0.25 },
+    { freq: 784, dur: 0.18, delay: 0.22, type: 'sine', vol: 0.3  },
+  ]);
+}
+
+function sfxChoiceWarn() {
+  // Cautious mid tone
+  playSequence([
+    { freq: 440, dur: 0.12, delay: 0,    type: 'triangle', vol: 0.25 },
+    { freq: 370, dur: 0.18, delay: 0.14, type: 'triangle', vol: 0.2  },
+  ]);
+}
+
+function sfxChoiceDanger() {
+  // Low warning buzz
+  playSequence([
+    { freq: 180, dur: 0.15, delay: 0,    type: 'sawtooth', vol: 0.3 },
+    { freq: 150, dur: 0.25, delay: 0.17, type: 'sawtooth', vol: 0.25 },
+  ]);
+}
+
+function sfxCrewDeath() {
+  // Somber descending tone
+  playSequence([
+    { freq: 300, dur: 0.2,  delay: 0,    type: 'sine', vol: 0.3 },
+    { freq: 220, dur: 0.2,  delay: 0.22, type: 'sine', vol: 0.25 },
+    { freq: 150, dur: 0.4,  delay: 0.44, type: 'sine', vol: 0.2 },
+  ]);
+}
+
+function sfxUpgrade() {
+  // Satisfying upgrade jingle
+  playSequence([
+    { freq: 392, dur: 0.08, delay: 0,    type: 'square', vol: 0.2 },
+    { freq: 523, dur: 0.08, delay: 0.09, type: 'square', vol: 0.2 },
+    { freq: 659, dur: 0.08, delay: 0.18, type: 'square', vol: 0.2 },
+    { freq: 784, dur: 0.2,  delay: 0.27, type: 'square', vol: 0.25 },
+  ]);
+}
+
+function sfxGameOver() {
+  // Mission failed dramatic sting
+  playSequence([
+    { freq: 440, dur: 0.3,  delay: 0,    type: 'sawtooth', vol: 0.3 },
+    { freq: 330, dur: 0.3,  delay: 0.35, type: 'sawtooth', vol: 0.28 },
+    { freq: 220, dur: 0.5,  delay: 0.70, type: 'sawtooth', vol: 0.25 },
+    { freq: 110, dur: 0.8,  delay: 1.25, type: 'sawtooth', vol: 0.2 },
+  ]);
+}
+
+function sfxWin() {
+  // Victory fanfare
+  playSequence([
+    { freq: 523, dur: 0.1,  delay: 0,    type: 'square', vol: 0.25 },
+    { freq: 659, dur: 0.1,  delay: 0.12, type: 'square', vol: 0.25 },
+    { freq: 784, dur: 0.1,  delay: 0.24, type: 'square', vol: 0.25 },
+    { freq: 1047,dur: 0.3,  delay: 0.36, type: 'square', vol: 0.3  },
+    { freq: 784, dur: 0.1,  delay: 0.68, type: 'square', vol: 0.2  },
+    { freq: 1047,dur: 0.4,  delay: 0.80, type: 'square', vol: 0.3  },
+  ]);
+}
+
+function sfxCountdown() {
+  // Intro countdown tick
+  playTone(660, 0.1, 'square', 0.2);
+}
+
+function sfxLaunch() {
+  // Launch rumble
+  playSequence([
+    { freq: 80,  dur: 0.3, delay: 0,   type: 'sawtooth', vol: 0.3 },
+    { freq: 120, dur: 0.3, delay: 0.1, type: 'sawtooth', vol: 0.25 },
+    { freq: 200, dur: 0.4, delay: 0.2, type: 'sine',     vol: 0.2 },
+  ]);
+}
+
 // ========== INTRO SCREEN ==========
 const INTRO_LINES = [
   { text: '> INITIALIZING ARES-1 MISSION SYSTEMS...', cls: 'dim', delay: 0 },
@@ -1506,11 +1671,13 @@ function runCountdown(n) {
   if (n <= 0) {
     el.textContent = 'LAUNCH';
     el.classList.add('visible', 'pulse');
+    sfxLaunch();
     setTimeout(() => { if (!introSkipped) finishIntro(); }, 700);
     return;
   }
   el.textContent = n;
   el.classList.add('visible');
+  sfxCountdown();
   void el.offsetWidth; // force reflow for pulse
   el.classList.add('pulse');
   setTimeout(() => {
@@ -1562,6 +1729,7 @@ function startGame(diff) {
 
   addLog("Mission ARES-1 initiated. Difficulty: " + cfg.label + ".", "good");
   state.currentEvents = pickEvents();
+  if (state.currentEvents.length > 0) sfxEventAppear();
   renderEvents();
   renderUI();
 }
@@ -1732,8 +1900,7 @@ function buyUpgrade(id) {
 
   state.score -= cost;
   state.upgrades[id] = level + 1;
-
-  // Flash effect
+  sfxUpgrade();
   addLog(`${upg.name} upgraded to level ${level + 1}!`, 'good');
 
   renderUpgradeGrid();
@@ -1780,6 +1947,7 @@ function damageCrew(amount) {
       if (c.health <= 0) {
         c.status = 'dead';
         addLog(`${c.name} has died.`, 'danger');
+        sfxCrewDeath();
       } else if (c.health < 30) c.status = 'danger';
       else if (c.health < 60) c.status = 'warn';
       else c.status = 'ok';
@@ -1823,6 +1991,7 @@ function pickEvents() {
 // ========== ADVANCE SOL ==========
 function advanceSol() {
   if (state.gameOver) return;
+  sfxNextSol();
 
   // Passive resource drain
   const alive = state.crew.filter(c=>c.status!=='dead').length;
@@ -1871,6 +2040,10 @@ function advanceSol() {
 function makeChoice(eventIdx, choiceIdx) {
   const ev = state.currentEvents[eventIdx];
   if (!ev) return;
+  const choiceType = ev.choices[choiceIdx].type;
+  if (choiceType === 'primary') sfxChoiceGood();
+  else if (choiceType === 'danger-btn') sfxChoiceDanger();
+  else sfxChoiceWarn();
   ev.choices[choiceIdx].effect();
   state.currentEvents.splice(eventIdx, 1);
   if (state.currentEvents.length === 0) {
@@ -1983,9 +2156,11 @@ function checkAlerts() {
   if (r.power < 20) alerts.push('POWER GRID FAILING');
   if (r.morale < 15) alerts.push('CREW MORALE CRITICAL');
   const bar = document.getElementById('alertBar');
+  const wasAlerting = bar.style.display === 'flex';
   if (alerts.length) {
     bar.style.display = 'flex';
     document.getElementById('alertMsg').textContent = alerts.join('  ·  ');
+    if (!wasAlerting) sfxAlert();
   } else {
     bar.style.display = 'none';
   }
@@ -2028,10 +2203,12 @@ function endGame(won, reason='') {
   ].join('\n');
 
   if (won) {
+    sfxWin();
     title.textContent = 'COLONY ESTABLISHED';
     title.className = 'overlay-title';
     sub.textContent = 'ARES-1 has achieved permanent settlement status.\nYour crew survived all 100 sols against all odds.' + stats;
   } else {
+    sfxGameOver();
     title.textContent = 'MISSION FAILED';
     title.className = 'overlay-title danger';
     sub.textContent = reason + stats;
